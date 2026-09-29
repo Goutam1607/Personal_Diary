@@ -1,0 +1,141 @@
+.companion {
+  overflow: visible;
+  display: block;
+}
+.companion * {
+  transform-box: view-box;
+}
+
+.c-breathe {
+  transform-origin: 100px 172px;
+  animation: c-breathe 5s ease-in-out infinite;
+}
+.c-breathe-slow {
+  transform-origin: 100px 172px;
+  /* ~5 breaths a minute: slow enough to breathe along with, if you want */
+  animation: c-breathe-deep 11s ease-in-out infinite;
+}
+@keyframes c-breathe {
+  0%, 100% { transform: scale(1, 1); }
+  50% { transform: scale(1.012, 0.985); }
+}
+@keyframes c-breathe-deep {
+  0%, 100% { transform: scale(1, 1); }
+  45%, 55% { transform: scale(1.035, 1.03); }
+}
+
+.c-bounce {
+  animation: c-bounce 1.6s cubic-bezier(.3,.7,.4,1) infinite;
+}
+@keyframes c-bounce {
+  0%, 100% { transform: translateY(0) scale(1.02, 0.98); }
+  40% { transform: translateY(-14px) scale(0.98, 1.03); }
+  70% { transform: translateY(0) scale(1.03, 0.97); }
+}
+
+.c-blink {
+  transform-origin: 100px 118px;
+  animation: c-blink 6s infinite;
+}
+@keyframes c-blink {
+  0%, 94%, 100% { transform: scaleY(1); }
+  96.5% { transform: scaleY(0.1); }
+}
+
+.c-wave {
+  transform-origin: 138px 132px;
+  animation: c-wave 1.1s ease-in-out infinite;
+}
+@keyframes c-wave {
+  0%, 100% { transform: rotate(-4deg); }
+  50% { transform: rotate(16deg); }
+}
+
+.c-ear-wiggle {
+  animation: c-wiggle 1.6s ease-in-out infinite;
+}
+@keyframes c-wiggle {
+  0%, 100% { rotate: 0deg; }
+  50% { rotate: 6deg; }
+}
+
+.c-twinkle {
+  animation: c-twinkle 3.2s ease-in-out infinite;
+}
+@keyframes c-twinkle {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 1; }
+}
+
+.c-float {
+  animation: c-float 4s ease-in-out infinite;
+}
+@keyframes c-float {
+  0%, 100% { transform: translateY(0); opacity: 0.9; }
+  50% { transform: translateY(-8px); opacity: 1; }
+}
+
+.c-z {
+  opacity: 0;
+  animation: c-z 4s ease-in-out infinite;
+}
+@keyframes c-z {
+  0% { opacity: 0; transform: translate(0, 6px); }
+  30% { opacity: 0.9; }
+  100% { opacity: 0; transform: translate(6px, -10px); }
+}
+
+.c-yawn {
+  transform-origin: 100px 133px;
+  animation: c-yawn 9s ease-in-out infinite;
+}
+@keyframes c-yawn {
+  0%, 70%, 100% { transform: scale(1); }
+  78%, 86% { transform: scale(1.7, 2.1); }
+}
+
+.c-steam {
+  animation: c-steam 3s ease-in-out infinite;
+}
+@keyframes c-steam {
+  0% { opacity: 0; transform: translateY(3px); }
+  40% { opacity: 0.9; }
+  100% { opacity: 0; transform: translateY(-6px); }
+}
+
+.c-puff {
+  animation: c-puff 1.8s ease-out infinite;
+}
+@keyframes c-puff {
+  0% { opacity: 0; transform: translateY(6px) scale(0.6); }
+  30% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-10px) scale(1.1); }
+}
+
+.c-tear {
+  animation: c-tear 5s ease-in infinite;
+}
+@keyframes c-tear {
+  0%, 60% { opacity: 0; transform: translateY(0); }
+  70% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(8px); }
+}
+
+.c-dots circle {
+  animation: c-dot 1.8s ease-in-out infinite;
+}
+.c-dots circle:nth-child(2) { animation-delay: 0.3s; }
+.c-dots circle:nth-child(3) { animation-delay: 0.6s; }
+@keyframes c-dot {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+.no-motion .companion *,
+.no-motion .companion {
+  animation: none !important;
+}
+.no-motion .c-z,
+.no-motion .c-steam,
+.no-motion .c-puff { opacity: 0.8; }
+.no-motion .c-tear { opacity: 1; }

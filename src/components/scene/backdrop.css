@@ -1,0 +1,126 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  transition: opacity 1s ease;
+}
+.backdrop-writing .layer {
+  opacity: 0.35;
+}
+.backdrop-writing .floaters {
+  opacity: 0.2;
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+  transition: opacity 1.2s ease;
+  animation: fade-in 2s ease both;
+}
+
+.backdrop-glow {
+  position: absolute;
+  width: 70vmax;
+  height: 70vmax;
+  right: -25vmax;
+  top: -30vmax;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in oklab, var(--glow) 55%, transparent) 0%, transparent 65%);
+  opacity: 0.55;
+  transition: background 1.5s ease;
+}
+.night .backdrop-glow {
+  opacity: 0.18;
+}
+
+/* warm lamp light pooling at the bottom corner, like writing in bed */
+.backdrop-lamp {
+  position: absolute;
+  width: 80vmax;
+  height: 80vmax;
+  left: -30vmax;
+  bottom: -45vmax;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in oklab, var(--glow) 32%, transparent) 0%, transparent 60%);
+  animation: lamp 9s ease-in-out infinite;
+}
+@keyframes lamp {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 1; }
+}
+
+.star {
+  position: absolute;
+  border-radius: 50%;
+  background: #fff6d8;
+  box-shadow: 0 0 6px 1px rgb(255 240 190 / 0.6);
+  animation: twinkle ease-in-out infinite;
+}
+:root:not(.night) .star {
+  background: color-mix(in oklab, var(--accent) 60%, #fff);
+  box-shadow: 0 0 6px 1px color-mix(in oklab, var(--accent) 30%, transparent);
+}
+@keyframes twinkle {
+  0%, 100% { opacity: 0.2; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+.rain {
+  transform: rotate(8deg) scale(1.2);
+}
+.drop {
+  position: absolute;
+  top: -40px;
+  width: 1.5px;
+  border-radius: 2px;
+  background: linear-gradient(to bottom, transparent, color-mix(in oklab, var(--accent) 70%, #fff));
+  animation: fall linear infinite;
+}
+.night .drop {
+  background: linear-gradient(to bottom, transparent, rgb(190 205 255 / 0.7));
+}
+@keyframes fall {
+  to { transform: translateY(115vh); }
+}
+
+.floater {
+  position: absolute;
+  bottom: -30px;
+  color: color-mix(in oklab, var(--accent) 60%, #fff);
+  animation: drift linear infinite;
+  opacity: 0;
+}
+.floaters-sparkles .floater { color: var(--glow); text-shadow: 0 0 8px var(--glow); }
+.floaters-hearts .floater { color: color-mix(in oklab, var(--accent) 70%, #fff); }
+.floaters-snowdust .floater {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  font-size: 0 !important;
+  background: rgb(255 255 255 / 0.85);
+  box-shadow: 0 0 10px 3px color-mix(in oklab, var(--accent) 45%, transparent);
+}
+.floaters-embers .floater {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: color-mix(in oklab, var(--accent) 80%, #ffb070);
+  box-shadow: 0 0 8px 2px color-mix(in oklab, var(--accent) 50%, transparent);
+}
+@keyframes drift {
+  0% { transform: translate(0, 0); opacity: 0; }
+  10% { opacity: 0.8; }
+  50% { transform: translate(18px, -55vh); }
+  90% { opacity: 0.6; }
+  100% { transform: translate(-10px, -110vh); opacity: 0; }
+}
+
+.no-motion .rain,
+.no-motion .floaters {
+  display: none;
+}
+.no-motion .star {
+  opacity: 0.7;
+}

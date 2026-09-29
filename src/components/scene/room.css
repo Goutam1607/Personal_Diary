@@ -1,0 +1,61 @@
+.room {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  aspect-ratio: 360 / 250;
+}
+.room-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.room-companion {
+  position: absolute;
+  left: 43%;
+  bottom: -1%;
+  width: 47%;
+}
+.room-companion .companion {
+  width: 100%;
+  height: auto;
+}
+
+.room-star {
+  animation: twinkle 4s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.room-bulb {
+  animation: bulb 3.6s ease-in-out infinite;
+}
+@keyframes bulb {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+.room-lampglow {
+  animation: lamp 8s ease-in-out infinite;
+}
+.room-rain line {
+  animation: room-rain 0.9s linear infinite;
+}
+@keyframes room-rain {
+  from { transform: translate(0, -20px); }
+  to { transform: translate(-6px, 170px); }
+}
+.room-cloud {
+  animation: cloud-drift 18s ease-in-out infinite;
+}
+@keyframes cloud-drift {
+  0%, 100% { transform: translateX(-4px); }
+  50% { transform: translateX(10px); }
+}
+.room-sun {
+  animation: lamp 6s ease-in-out infinite;
+}
+
+.no-motion .room-rain line {
+  animation: none;
+  transform: translate(0, 40px);
+}
