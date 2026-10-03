@@ -4,3 +4,12 @@ test-results
 playwright-report
 *.log
 .DS_Store
+*.local
+*.jks
+.data
+
+# Database backups and their keys must never be committed: this repository is public.
+*.json.gz
+*.age
+*backup-key*.txt
+*.dump

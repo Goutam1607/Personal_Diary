@@ -1,5 +1,7 @@
 import { useEffect } from 'react'
 import { AppShell } from './components/AppShell'
+import { AccountScreen } from './pages/AccountScreen'
+import { MigrateScreen } from './pages/MigrateScreen'
 import { Backdrop } from './components/scene/Backdrop'
 import { ToastProvider } from './components/ui/Toast'
 import { CheckIn } from './pages/CheckIn'
@@ -34,7 +36,7 @@ export function App() {
 }
 
 function Gate() {
-  const { status, lock } = useVault()
+  const { status, lock, reload } = useVault()
   const { settings } = useSettings()
   const { setMood } = useAtmosphere()
   const route = useRoute()
@@ -49,15 +51,20 @@ function Gate() {
   }, [status, setMood])
 
   if (status === 'loading') return <div className="min-h-dvh" aria-busy="true" />
-  if (status === 'unavailable')
+  if (status === 'offline')
     return (
       <main className="relative z-10 mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center px-6 text-center">
-        <h1 className="font-display text-3xl font-semibold">This browser won’t let me keep your diary here.</h1>
+        <h1 className="font-display text-3xl font-semibold">I can’t reach your diary right now.</h1>
         <p className="mt-3 text-muted">
-          Private/incognito windows or blocked site storage can do this. Try a normal window, or allow this site to store data.
+          Your diary lives safely in your account, so I need a connection to open it. Check your internet, then try again.
         </p>
+        <button type="button" className="btn btn-primary mt-6" onClick={() => void reload()}>
+          Try again
+        </button>
       </main>
     )
+  if (status === 'signed-out') return <AccountScreen />
+  if (status === 'migrate') return <MigrateScreen />
   if (status === 'new') return <SetupScreen />
   if (status === 'locked') return <LockScreen />
   return <Unlocked route={route} />

@@ -1,0 +1,104 @@
+# Scheduled, encrypted, restore-checked backups of the diary database (Supabase Free has none).
+#
+# Each run:
+#   1. makes a backup from one consistent snapshot (npm run db:backup), with per-table checksums;
+#   2. restores it into a throwaway PostgreSQL and checks every table matches (so each backup is
+#      proven restorable, not just written);
+#   3. encrypts it with age to YOUR public key — the private key never comes near GitHub;
+#   4. stores only the encrypted file as a workflow artifact for 90 days.
+#
+# This repository is PUBLIC: anyone can read these logs and download artifacts. That's why the run
+# refuses to upload anything unencrypted, and the logs say only pass/fail (no counts, no names).
+#
+# Setup (docs/BACKUPS.md → "Scheduled backups on GitHub"):
+#   Secrets:   DATABASE_URL (Supabase Session pooler string), DATABASE_CA_CERT (Supabase's CA)
+#   Variable:  BACKUP_AGE_RECIPIENT (your age public key, "age1…")
+name: Encrypted database backup
+
+on:
+  schedule:
+    # Mondays and Thursdays at 03:23 UTC. Twice a week keeps the window of possible loss short.
+    - cron: '23 3 * * 1,4'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: database-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      # Scratch database for the restore check. It only exists for this job.
+      scratch:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: restore-check-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 20
+
+    steps:
+      - name: Check that backups will be encrypted
+        env:
+          AGE_RECIPIENT: ${{ vars.BACKUP_AGE_RECIPIENT }}
+          HAS_DB: ${{ secrets.DATABASE_URL != '' }}
+          HAS_CA: ${{ secrets.DATABASE_CA_CERT != '' }}
+        run: |
+          if [[ ! "$AGE_RECIPIENT" =~ ^age1[0-9a-z]{58}$ ]]; then
+            echo "::error::Set the repository variable BACKUP_AGE_RECIPIENT to your age public key (age1…). Nothing is backed up without it."
+            exit 1
+          fi
+          if [[ "$HAS_DB" != "true" || "$HAS_CA" != "true" ]]; then
+            echo "::error::Set the repository secrets DATABASE_URL and DATABASE_CA_CERT."
+            exit 1
+          fi
+
+      # Pinned to exact commits: this job holds the database password.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+
+      - name: Install the backup tool's dependencies
+        run: npm ci --omit=dev --ignore-scripts --no-audit --no-fund
+
+      - name: Install age
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq age
+
+      - name: Back up, then prove the backup restores
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_CA_CERT: ${{ secrets.DATABASE_CA_CERT }}
+          RESTORE_DATABASE_URL: postgresql://postgres:restore-check-only@localhost:5432/postgres
+        run: |
+          umask 077
+          mkdir -p "$RUNNER_TEMP/plain"
+          npm run --silent db:backup -- --out "$RUNNER_TEMP/plain/db.json.gz" --restore-check
+
+      - name: Encrypt (the unencrypted copy is deleted)
+        env:
+          AGE_RECIPIENT: ${{ vars.BACKUP_AGE_RECIPIENT }}
+        run: |
+          umask 077
+          name="little-corner-db-$(date -u +%Y-%m-%dT%H%MZ).json.gz.age"
+          mkdir -p "$RUNNER_TEMP/encrypted"
+          age --encrypt --recipient "$AGE_RECIPIENT" --output "$RUNNER_TEMP/encrypted/$name" "$RUNNER_TEMP/plain/db.json.gz"
+          shred -u "$RUNNER_TEMP/plain/db.json.gz"
+          echo "BACKUP_NAME=$name" >> "$GITHUB_ENV"
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ${{ env.BACKUP_NAME }}
+          path: ${{ runner.temp }}/encrypted/${{ env.BACKUP_NAME }}
+          retention-days: 90
+          compression-level: 0
+          if-no-files-found: error

@@ -3,9 +3,9 @@ import { fromBase64, randomBytes, toBase64 } from './crypto'
 /**
  * Passkeys via WebAuthn with the PRF extension.
  *
- * Why PRF matters: this diary has no server, so a plain passkey "login" would only be a
- * screen that JavaScript decides to hide — anyone with access to the browser's storage
- * could skip it. The PRF extension instead makes your authenticator (Windows Hello,
+ * Why PRF matters: a plain passkey "login" only proves who you are — it can't decrypt
+ * anything, and anyone holding the encrypted data (a device, or a copy of the database)
+ * could simply skip it. The PRF extension instead makes your authenticator (Windows Hello,
  * Touch ID, a phone, a security key) compute a secret that never leaves it unless you
  * verify yourself. That secret is what decrypts the diary, so the passkey is a real key,
  * not just a door sign.

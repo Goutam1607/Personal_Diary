@@ -7,6 +7,7 @@ import { MIN_PHRASE_LENGTH } from '../lib/vault'
 import { useSettings } from '../state/settings'
 import { useVault } from '../state/vault'
 import { PasskeySetup } from '../components/PasskeySetup'
+import { RestoreDialog } from '../components/RestoreBackup'
 
 type Step = 'hello' | 'companion' | 'phrase' | 'passkey'
 
@@ -22,6 +23,7 @@ export function SetupScreen() {
   const [enter, setEnter] = useState<(() => Promise<void>) | null>(null)
   const { settings, update } = useSettings()
   const [step, setStep] = useState<Step>('hello')
+  const [restoreOpen, setRestoreOpen] = useState(false)
   const [name, setName] = useState('')
   const [phrase, setPhrase] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -60,8 +62,8 @@ export function SetupScreen() {
             <p className="mt-3 flex max-w-sm items-start gap-2 rounded-2xl bg-accent-soft/50 px-4 py-3 text-left text-sm leading-relaxed">
               <span aria-hidden="true">🔐</span>
               <span>
-                This corner is only yours. Everything you write is encrypted and kept on this device — not even the person who shared this
-                link with you can read it.
+                This corner is only yours. Everything you write is encrypted on this device before it’s saved to your account, so the
+                server only keeps scrambled pages. Not even the person who runs this site can read them.
               </span>
             </p>
             <form
@@ -84,6 +86,10 @@ export function SetupScreen() {
               />
               <button className="btn btn-primary mt-5 w-full">Continue</button>
             </form>
+            <button type="button" className="mt-4 text-sm font-semibold text-muted underline-offset-4 hover:text-ink hover:underline" onClick={() => setRestoreOpen(true)}>
+              Already have a diary? Bring it back from a backup
+            </button>
+            <RestoreDialog open={restoreOpen} onClose={() => setRestoreOpen(false)} fresh />
           </div>
         )}
 

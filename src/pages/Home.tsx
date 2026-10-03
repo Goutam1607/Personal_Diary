@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react'
+import { BackupReminder } from '../components/DriveBackup'
+import { LegacyReminder } from '../components/LegacyDiary'
 import { EntryCard } from '../components/EntryCard'
 import { MoodPicker } from '../components/MoodPicker'
 import { OnThisDay } from '../components/OnThisDay'
@@ -126,6 +128,9 @@ export function Home() {
               </span>
             </a>
           </section>
+
+          <LegacyReminder />
+          <BackupReminder />
 
           <OnThisDay entries={memories} />
 

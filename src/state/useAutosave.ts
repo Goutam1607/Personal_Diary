@@ -18,6 +18,8 @@ export function useAutosave(entry: Entry, alreadySaved: boolean) {
   const saved = useRef(alreadySaved)
   const initial = useRef(entry)
   const [status, setStatus] = useState<SaveStatus>(alreadySaved ? 'saved' : 'idle')
+  /** Saved, but only on this device for now: it goes to your account as soon as the server can be reached. */
+  const [queued, setQueued] = useState(false)
 
   const flush = useCallback(async () => {
     if (!dirty.current) return
@@ -26,8 +28,9 @@ export function useAutosave(entry: Entry, alreadySaved: boolean) {
     if (!saved.current && !hasContent(e)) return
     setStatus('saving')
     try {
-      await save({ ...e, updatedAt: new Date().toISOString() })
+      const where = await save({ ...e, updatedAt: new Date().toISOString() })
       saved.current = true
+      setQueued(where === 'queued')
       setStatus('saved')
     } catch {
       dirty.current = true
@@ -71,5 +74,5 @@ export function useAutosave(entry: Entry, alreadySaved: boolean) {
     latest.current = { ...latest.current, body: '', unsaid: '', goodThing: '', checkin: undefined }
   }, [])
 
-  return { status, flush, discard, isSaved: () => saved.current }
+  return { status, queued, flush, discard, isSaved: () => saved.current }
 }

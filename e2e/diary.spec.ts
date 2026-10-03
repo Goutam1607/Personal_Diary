@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { expect, test } from '@playwright/test'
-import { PHRASE, rawStorage, setup, unlock, writeEntry } from './helpers'
+import { PHRASE, createAccount, rawServerData, setup, unlock, writeEntry } from './helpers'
 
 test.describe('writing', () => {
   test('create, edit, favorite and delete an entry', async ({ page }) => {
@@ -181,7 +181,8 @@ test.describe('privacy', () => {
   test('entries are encrypted at rest and persist across reloads', async ({ page }) => {
     await setup(page, { name: 'Secret Name' })
     await writeEntry(page, { mood: 'Angry', body: 'This sentence must never appear in plain text.' })
-    const raw = await rawStorage(page)
+    const raw = await rawServerData(page)
+    expect(raw).toContain('"records"')
     expect(raw).not.toContain('must never appear')
     expect(raw).not.toContain('Secret Name')
     expect(raw).not.toContain('angry')
@@ -322,11 +323,12 @@ test.describe('shared link, separate diaries', () => {
     await setup(alex, { name: 'Alex' })
     await writeEntry(alex, { body: 'Alex’s secret page' })
 
-    // Sam opens the same link and starts fresh, with no trace of Alex
+    // Sam opens the same link and starts fresh, with their own account and no trace of Alex
     await sam.goto('/')
+    await createAccount(sam)
     await expect(sam.getByRole('heading', { name: 'Let’s make you a little corner.' })).toBeVisible()
     await expect(sam.getByText('This corner is only yours.')).toBeVisible()
-    await setup(sam, { name: 'Sam' })
+    await setup(sam, { name: 'Sam', account: false })
     await expect(sam.getByText('Your first page is waiting.')).toBeVisible()
     await sam.goto('/#/memories?view=timeline')
     await expect(sam.getByText('Alex’s secret page')).toHaveCount(0)

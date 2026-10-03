@@ -20,5 +20,8 @@ export default defineConfig({
     command: 'npx vite --port 5199 --strictPort',
     url: 'http://127.0.0.1:5199',
     reuseExistingServer: true,
+    // Turns on the Google Drive backup UI; e2e/backup.spec.ts fakes Google's side.
+    // LC_DEV_DB=memory: a throwaway database for each run (see diaryApi() in vite.config.ts).
+    env: { VITE_GOOGLE_CLIENT_ID: 'e2e-client.apps.googleusercontent.com', LC_DEV_DB: 'memory' },
   },
 })

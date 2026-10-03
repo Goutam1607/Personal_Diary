@@ -7,6 +7,7 @@ import {
   createVault,
   exportBackup,
   importBackup,
+  openBackup,
   loadEntries,
   loadPrivateSettings,
   saveEntry,
@@ -116,5 +117,22 @@ describe('vault', () => {
     const kb = await unlockWithPhrase(b, 'soft blanket nights')
     const entries = await loadEntries(b, kb)
     expect(entries[0].body).toBe('remember this')
+  })
+
+  it('reads a backup without touching the diary on this device', async () => {
+    const a = fresh()
+    const key = await createVault(a, 'soft blanket nights')
+    await saveEntry(a, key, entry({ body: 'lake day' }))
+    await savePrivateSettings(a, key, { name: 'Sam', customTags: [] })
+    const backup = await exportBackup(a)
+
+    const b = fresh()
+    const kb = await createVault(b, 'another phrase here')
+    await saveEntry(b, kb, entry({ body: 'mine stays' }))
+    await expect(openBackup(backup, 'nope nope nope')).rejects.toBeInstanceOf(WrongSecretError)
+    const opened = await openBackup(backup, 'soft blanket nights')
+    expect(opened.entries.map((e) => e.body)).toEqual(['lake day'])
+    expect(opened.settings.name).toBe('Sam')
+    expect((await loadEntries(b, kb)).map((e) => e.body)).toEqual(['mine stays'])
   })
 })

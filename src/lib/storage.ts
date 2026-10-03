@@ -171,3 +171,18 @@ export class IndexedDbStorage implements VaultStorage {
     })
   }
 }
+
+/**
+ * Asks the browser to treat the diary as "persistent": it then won't delete it on its own when the
+ * device runs low on space (clearing site data yourself still removes it). Chrome decides silently,
+ * based on how much you use the site or whether it's installed; Firefox may ask. Safe to call often.
+ * Resolves to whether the diary is protected.
+ */
+export async function requestPersistence(): Promise<boolean> {
+  try {
+    if (!navigator.storage?.persist) return false
+    return (await navigator.storage.persisted()) || (await navigator.storage.persist())
+  } catch {
+    return false
+  }
+}

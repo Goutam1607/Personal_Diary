@@ -16,7 +16,7 @@ export function Vent({ id, instanceKey }: { id?: string; instanceKey: string }) 
   const toast = useToast()
   const existing = id ? entries.find((e) => e.id === id) : undefined
   const [entry, setEntry] = useState<Entry>(() => existing ?? newEntry('vent'))
-  const { status, flush, discard, isSaved } = useAutosave(entry, !!existing)
+  const { status, queued, flush, discard, isSaved } = useAutosave(entry, !!existing)
   const [done, setDone] = useState(false)
   const [lettingGo, setLettingGo] = useState(false)
   const ref = useRef<HTMLTextAreaElement>(null)
@@ -73,7 +73,7 @@ export function Vent({ id, instanceKey }: { id?: string; instanceKey: string }) 
           <Icon name="back" size={18} /> Home
         </a>
         <p className="text-xs text-muted" role="status" aria-live="polite">
-          {status === 'saved' ? 'Saved · encrypted' : status === 'saving' ? 'Saving…' : ''}
+          {status === 'saved' ? (queued ? 'Saved on this device · syncs when you’re online' : 'Saved · encrypted') : status === 'saving' ? 'Saving…' : ''}
         </p>
       </div>
       <h1 className="hand text-4xl sm:text-5xl">Go ahead. Let it out.</h1>

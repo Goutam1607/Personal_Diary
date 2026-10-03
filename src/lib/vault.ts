@@ -167,17 +167,29 @@ export async function exportBackup(storage: VaultStorage): Promise<BackupFile> {
  * Restores a backup after proving the phrase opens it. Passkeys are dropped because they are
  * bound to the website address they were created on; you can add them again afterwards.
  */
-export async function importBackup(storage: VaultStorage, file: BackupFile, phrase: string): Promise<void> {
+async function backupKey(file: BackupFile, phrase: string): Promise<{ key: CryptoKey; phraseUnlock: PhraseUnlock }> {
   if (file?.app !== 'little-corner' || file.format !== 1) throw new Error("This doesn't look like a diary backup.")
   const phraseUnlock = file.meta.unlocks.find((u): u is PhraseUnlock => u.type === 'phrase')
   if (!phraseUnlock) throw new Error('This backup has no secret phrase.')
   const kek = await deriveKeyFromPhrase(phrase, fromBase64(phraseUnlock.salt), phraseUnlock.iterations)
-  let key: CryptoKey
   try {
-    key = await unwrapVaultKey(phraseUnlock.wrapped, kek)
+    return { key: await unwrapVaultKey(phraseUnlock.wrapped, kek), phraseUnlock }
   } catch {
     throw new WrongSecretError()
   }
+}
+
+/** Decrypts a backup in memory, without touching the diary on this device. */
+export async function openBackup(file: BackupFile, phrase: string): Promise<{ entries: Entry[]; settings: PrivateSettings }> {
+  const { key } = await backupKey(file, phrase)
+  const entries = await Promise.all(file.records.map((r) => open<Entry>(key, r.sealed, r.id)))
+  const blob = file.blobs?.[SETTINGS_KEY]
+  const settings: PrivateSettings = { name: '', customTags: [], ...(blob ? await open<PrivateSettings>(key, blob, SETTINGS_KEY) : {}) }
+  return { entries, settings }
+}
+
+export async function importBackup(storage: VaultStorage, file: BackupFile, phrase: string): Promise<void> {
+  const { key, phraseUnlock } = await backupKey(file, phrase)
   // Make sure the contents really decrypt before replacing anything.
   await Promise.all(file.records.map((r) => open(key, r.sealed, r.id)))
   const meta: VaultMeta = { ...file.meta, unlocks: [phraseUnlock] }

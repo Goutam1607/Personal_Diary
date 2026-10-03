@@ -56,7 +56,7 @@ export function Write({ id, params, instanceKey }: { id?: string; params: URLSea
     const date = params.get('date') || dayKey()
     return newEntry('entry', date === dayKey() ? today.mood : null, date === dayKey() ? today.customMood : undefined, date)
   })
-  const { status, flush, discard, isSaved } = useAutosave(entry, !!existing)
+  const { status, queued, flush, discard, isSaved } = useAutosave(entry, !!existing)
 
   const [askMood, setAskMood] = useState(!existing && !entry.mood && !entry.customMood)
   const [prompt, setPrompt] = useState<string | null>(() => (params.get('prompt') ? pickPrompt(entry.mood) : null))
@@ -130,10 +130,11 @@ export function Write({ id, params, instanceKey }: { id?: string; params: URLSea
 
   const statusText = useMemo(() => {
     if (status === 'saving') return 'Saving…'
+    if (status === 'saved' && queued) return 'Saved on this device · it goes to your account when you’re back online'
     if (status === 'saved') return 'Saved · encrypted on this device'
     if (status === 'error') return 'Couldn’t save just now — I’ll keep trying'
     return 'Nothing saved until you write something'
-  }, [status])
+  }, [status, queued])
 
   if (finished) {
     return (

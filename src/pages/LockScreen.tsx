@@ -8,7 +8,7 @@ import { useSettings } from '../state/settings'
 import { useVault } from '../state/vault'
 
 export function LockScreen() {
-  const { passkeys, unlockWithPhrase, unlockWithPasskey, storage, reload } = useVault()
+  const { passkeys, unlockWithPhrase, unlockWithPasskey, storage, reload, account, signOut } = useVault()
   const { settings } = useSettings()
   const hasPasskey = passkeys.length > 0
   const [usePhrase, setUsePhrase] = useState(!hasPasskey)
@@ -115,6 +115,14 @@ export function LockScreen() {
         <button type="button" className="mt-4 text-sm text-muted underline decoration-dotted underline-offset-4 hover:text-ink" onClick={() => setForgotOpen(true)}>
           Forgot your phrase?
         </button>
+        {account && (
+          <p className="mt-3 text-xs text-muted">
+            Signed in as {account} ·{' '}
+            <button type="button" className="underline decoration-dotted underline-offset-4 hover:text-ink" onClick={() => void signOut().catch(() => {})}>
+              Sign out
+            </button>
+          </p>
+        )}
       </div>
 
       <ForgotDialog
@@ -137,10 +145,13 @@ function ForgotDialog({ open, onClose, onErase }: { open: boolean; onClose: () =
     <Dialog open={open} onClose={onClose} title="If you’ve forgotten your phrase">
       <div className="space-y-3 text-[0.95rem] leading-relaxed">
         <p>
-          Your diary is encrypted with your phrase (and your passkey, if you added one). Nobody keeps a copy — not this website, not
+          Your diary is encrypted with your phrase (and your passkey, if you added one). Nobody else has the key — not this website, not
           anyone. That’s what keeps it private, but it also means it can’t be recovered without them.
         </p>
-        <p>If you have a passkey set up, try that first. If you have a backup file, you can restore it after starting over.</p>
+        <p>
+          If you have a passkey set up, try that first. Starting over erases the diary in your account. If you have a backup, you can
+          restore it afterwards.
+        </p>
         <p className="text-muted">
           To erase this diary and begin again, type <strong className="text-ink">start over</strong> below.
         </p>

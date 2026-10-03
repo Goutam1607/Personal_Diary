@@ -1,26 +1,22 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
+import { DeviceDiaryPanel } from '../components/LegacyDiary'
+import { MIN_PASSWORD_LENGTH } from '../lib/account'
 import { Companion } from '../components/companion/Companion'
 import { COMPANION_KINDS, SPECIES } from '../components/companion/species'
+import { describeLastBackup, useDriveBackup } from '../components/DriveBackup'
 import { PasskeySetup } from '../components/PasskeySetup'
+import { RestoreDialog } from '../components/RestoreBackup'
 import { Dialog } from '../components/ui/Dialog'
 import { Icon } from '../components/ui/Icon'
 import { useToast } from '../components/ui/Toast'
 import { formatLongDate, formatTime } from '../lib/dates'
 import { moodLabel } from '../lib/moods'
-import { changePhrase, exportBackup, importBackup, MIN_PHRASE_LENGTH, removePasskey, WrongSecretError, type BackupFile } from '../lib/vault'
+import { changePhrase, exportBackup, MIN_PHRASE_LENGTH, removePasskey, WrongSecretError } from '../lib/vault'
 import { useAtmosphere } from '../state/atmosphere'
 import { useSettings } from '../state/settings'
 import { useVault } from '../state/vault'
 import type { Entry } from '../lib/types'
-
-function download(name: string, text: string, type: string) {
-  const url = URL.createObjectURL(new Blob([text], { type }))
-  const a = document.createElement('a')
-  a.href = url
-  a.download = name
-  a.click()
-  setTimeout(() => URL.revokeObjectURL(url), 1000)
-}
+import { download, downloadKeepsake } from '../lib/download'
 
 function readable(entries: Entry[]): string {
   return [...entries]
@@ -54,6 +50,10 @@ export function Settings() {
   const [restoreOpen, setRestoreOpen] = useState(false)
   const [eraseOpen, setEraseOpen] = useState(false)
   const [readableOpen, setReadableOpen] = useState(false)
+  const [readBackupOpen, setReadBackupOpen] = useState(false)
+  const [accountPasswordOpen, setAccountPasswordOpen] = useState(false)
+  const [signOutError, setSignOutError] = useState('')
+  const drive = useDriveBackup()
 
   useEffect(() => setMood(null), [setMood])
 
@@ -79,6 +79,45 @@ export function Settings() {
           </div>
           <button className="btn btn-soft">Save</button>
         </form>
+      </Section>
+
+      <Section title="Your account" icon="key">
+        <p className="text-sm leading-relaxed">
+          Signed in as <strong>{vault.account}</strong>. Your diary is kept in your account, so you can open it on any device with your
+          secret phrase.
+        </p>
+        {vault.pending > 0 && (
+          <p className="flex items-start gap-2 text-sm leading-relaxed text-muted">
+            <Icon name="cloud" size={18} className="mt-0.5 shrink-0 text-accent" />
+            {vault.pending === 1 ? 'One save is' : `${vault.pending} saves are`} kept safely on this device, waiting to reach your account.
+            They’ll go as soon as the connection is back.
+          </p>
+        )}
+        <div className="flex flex-wrap gap-2">
+          <button type="button" className="btn btn-ghost text-sm" onClick={() => setAccountPasswordOpen(true)}>
+            <Icon name="key" size={16} /> Change account password
+          </button>
+          <button
+            type="button"
+            className="btn btn-ghost text-sm"
+            onClick={async () => {
+              setSignOutError('')
+              try {
+                await vault.signOut()
+              } catch (err) {
+                setSignOutError((err as Error).message)
+              }
+            }}
+          >
+            <Icon name="lock" size={16} /> Sign out on this device
+          </button>
+        </div>
+        {signOutError && (
+          <p role="alert" className="text-sm font-semibold text-accent">
+            {signOutError}
+          </p>
+        )}
+        <DeviceDiaryPanel />
       </Section>
 
       <Section title="Your companion">
@@ -187,9 +226,30 @@ export function Settings() {
 
       <Section title="Backups" icon="download">
         <p className="text-sm leading-relaxed text-muted">
-          Your diary lives only in this browser on this device. If you clear site data or lose the device, it’s gone — so it’s kind to keep
-          a backup somewhere safe. Backups stay encrypted and open only with your secret phrase.
+          Your diary is kept in your account on the server. Keep a backup of your own too: it’s a copy only you control, and your safety
+          net if anything ever happens to the server. Backups stay encrypted and open only with your secret phrase.
         </p>
+        {drive.configured && (
+          <div className="rounded-3xl border border-line p-4">
+            <h3 className="flex items-center gap-2 font-semibold">
+              <Icon name="cloud" size={18} className="text-accent" /> Google Drive
+            </h3>
+            <p className="mt-1 text-sm leading-relaxed text-muted">
+              Keeps encrypted copies in a “my little corner backups” folder in your Google Drive, so your memories survive even if this
+              device doesn’t. Google only ever sees scrambled data. {describeLastBackup(drive.last)}
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button type="button" className="btn btn-soft text-sm" onClick={drive.backup} disabled={drive.busy}>
+                <Icon name="cloud" size={16} /> {drive.busy ? 'Backing up…' : 'Back up to Google Drive'}
+              </button>
+            </div>
+            {drive.error && (
+              <p role="alert" className="mt-2 text-sm font-semibold text-accent">
+                {drive.error}
+              </p>
+            )}
+          </div>
+        )}
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
@@ -206,7 +266,10 @@ export function Settings() {
             <Icon name="upload" size={16} /> Restore a backup
           </button>
           <button type="button" className="btn btn-ghost text-sm" onClick={() => setReadableOpen(true)}>
-            Download a readable copy
+            <Icon name="book" size={16} /> Download my memories
+          </button>
+          <button type="button" className="btn btn-ghost text-sm" onClick={() => setReadBackupOpen(true)}>
+            <Icon name="book" size={16} /> Read a backup
           </button>
         </div>
       </Section>
@@ -216,7 +279,7 @@ export function Settings() {
       </Section>
 
       <Section title="Start over">
-        <p className="text-sm text-muted">Erase everything on this device. This can’t be undone.</p>
+        <p className="text-sm text-muted">Erase every page in your account. This can’t be undone from here.</p>
         <button type="button" className="btn btn-ghost w-fit text-sm" onClick={() => setEraseOpen(true)}>
           <Icon name="trash" size={16} /> Erase my diary
         </button>
@@ -226,14 +289,16 @@ export function Settings() {
         <PasskeySetup onDone={() => setPasskeyOpen(false)} />
       </Dialog>
       <ChangePhraseDialog open={phraseOpen} onClose={() => setPhraseOpen(false)} />
+      <ChangeAccountPasswordDialog open={accountPasswordOpen} onClose={() => setAccountPasswordOpen(false)} />
       <RestoreDialog open={restoreOpen} onClose={() => setRestoreOpen(false)} />
-      <ReadableDialog open={readableOpen} onClose={() => setReadableOpen(false)} entries={vault.entries} />
+      <RestoreDialog open={readBackupOpen} onClose={() => setReadBackupOpen(false)} mode="read" />
+      <ReadableDialog open={readableOpen} onClose={() => setReadableOpen(false)} entries={vault.entries} name={vault.privateSettings.name} />
       <EraseDialog open={eraseOpen} onClose={() => setEraseOpen(false)} />
     </div>
   )
 }
 
-function Section({ title, icon, children }: { title: string; icon?: 'lock' | 'download' | 'shield'; children: ReactNode }) {
+function Section({ title, icon, children }: { title: string; icon?: 'lock' | 'download' | 'shield' | 'key'; children: ReactNode }) {
   return (
     <section className="paper mt-6 rounded-[1.8rem] p-5 sm:p-7">
       <h2 className="font-display mb-4 flex items-center gap-2 text-xl font-semibold">
@@ -286,19 +351,28 @@ function PrivacyExplainer() {
         open. Someone who copies this browser’s files sees only scrambled data.
       </p>
       <p>
-        <strong>Where it lives:</strong> only in this browser on this device (IndexedDB). There is no server and no account; nothing is
-        uploaded, and the page loads no outside fonts, trackers or analytics.
+        <strong>Where it lives:</strong> in your account, in this site’s database. Pages are encrypted on your device before they’re sent,
+        so the server only ever stores scrambled data. Your account password just lets you sign in; it can’t open the diary, and your
+        secret phrase never leaves your device. If you’re offline, new words wait on this device (still encrypted) until they can be sent.
+        The page loads no outside fonts, trackers or analytics.
       </p>
       <p>
-        <strong>If a friend shared this link with you:</strong> the website only delivers the app itself. Your diary is created and
-        encrypted here, on your device, so whoever hosts the site can’t see your entries — and you can’t see theirs. Each browser holds
-        one diary, so if you share a computer, use your own browser profile.
+        <strong>What the server can see:</strong> your username, how many pages you have, roughly how long each one is, and when they
+        were saved. Not what they say, your moods or your tags. It can’t unlock your diary. But your phrase is guessable offline if it’s
+        short, by anyone who got a copy of the database, so a long phrase matters.
+      </p>
+      <p>
+        <strong>Honestly, it isn’t “end-to-end” in the strictest sense:</strong> the same website that stores your encrypted pages also
+        delivers the app’s code. Someone who took over the site could change that code to capture your phrase the next time you type it.
+        What the encryption does guarantee is that a stolen or leaked database (or its backups) only contains pages nobody can read
+        without your phrase or passkey.
       </p>
       <p>
         <strong>What it can’t protect against:</strong> while the diary is <em>unlocked</em>, anyone using this device can read it —
         that’s what auto-lock is for. Malware or a malicious browser extension on your device could also see what’s on screen. A short or
-        guessable phrase can be brute-forced by someone who copies the encrypted data, so a longer phrase is safer. And because only you
-        hold the key, a forgotten phrase (with no passkey) can’t be recovered by anyone.
+        guessable phrase can be brute-forced by someone who copies the encrypted data, so a longer phrase is safer. Changing your phrase
+        protects your diary from now on, but older database backups still open with the old phrase for as long as they’re kept. And
+        because only you hold the key, a forgotten phrase (with no passkey) can’t be recovered by anyone.
       </p>
       <p className="text-muted">
         Not stored encrypted: look-and-feel preferences (day/night, text size, animations, which companion, auto-lock time), because they’re
@@ -360,6 +434,60 @@ function ChangePhraseDialog({ open, onClose }: { open: boolean; onClose: () => v
   )
 }
 
+function ChangeAccountPasswordDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { changeAccountPassword } = useVault()
+  const toast = useToast()
+  const [current, setCurrent] = useState('')
+  const [next, setNext] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+  return (
+    <Dialog open={open} onClose={onClose} title="Change your account password">
+      <form
+        className="space-y-3"
+        onSubmit={async (e) => {
+          e.preventDefault()
+          if (next !== confirm) return setError('The new passwords don’t match yet.')
+          setBusy(true)
+          setError('')
+          try {
+            await changeAccountPassword(current, next)
+            toast('New account password set 🤍')
+            setCurrent('')
+            setNext('')
+            setConfirm('')
+            onClose()
+          } catch (err) {
+            setError((err as Error).message)
+          }
+          setBusy(false)
+        }}
+      >
+        <PasswordField id="ap-current" label="Current account password" value={current} onChange={setCurrent} autoComplete="current-password" />
+        <PasswordField id="ap-next" label={`New account password (at least ${MIN_PASSWORD_LENGTH} characters)`} value={next} onChange={setNext} autoComplete="new-password" />
+        <PasswordField id="ap-confirm" label="New account password again" value={confirm} onChange={setConfirm} autoComplete="new-password" />
+        {error && (
+          <p role="alert" className="text-sm font-semibold text-accent">
+            {error}
+          </p>
+        )}
+        <p className="text-xs text-muted">
+          This is the password you sign in with. It doesn’t change your secret phrase. Other devices will be signed out.
+        </p>
+        <div className="flex justify-end gap-2 pt-2">
+          <button type="button" className="btn btn-ghost" onClick={onClose}>
+            Cancel
+          </button>
+          <button className="btn btn-primary" disabled={busy || !current || next.length < MIN_PASSWORD_LENGTH}>
+            {busy ? 'Changing…' : 'Change password'}
+          </button>
+        </div>
+      </form>
+    </Dialog>
+  )
+}
+
 function PasswordField({ id, label, value, onChange, autoComplete }: { id: string; label: string; value: string; onChange: (v: string) => void; autoComplete: string }) {
   return (
     <div>
@@ -371,98 +499,50 @@ function PasswordField({ id, label, value, onChange, autoComplete }: { id: strin
   )
 }
 
-function RestoreDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { storage, reload } = useVault()
-  const [file, setFile] = useState<BackupFile | null>(null)
-  const [phrase, setPhrase] = useState('')
-  const [error, setError] = useState('')
+function ReadableDialog({ open, onClose, entries, name }: { open: boolean; onClose: () => void; entries: Entry[]; name: string }) {
+  const toast = useToast()
   const [busy, setBusy] = useState(false)
-  const input = useRef<HTMLInputElement>(null)
+  const stamp = () => new Date().toISOString().slice(0, 10)
   return (
-    <Dialog open={open} onClose={onClose} title="Restore a backup">
-      <form
-        className="space-y-3"
-        onSubmit={async (e) => {
-          e.preventDefault()
-          if (!file) return
-          setBusy(true)
-          setError('')
-          try {
-            await importBackup(storage, file, phrase)
-            onClose()
-            await reload()
-          } catch (err) {
-            setError(err instanceof WrongSecretError ? 'That phrase doesn’t open this backup.' : (err as Error).message)
-            setBusy(false)
-          }
-        }}
-      >
-        <p className="text-sm leading-relaxed text-muted">
-          Restoring <strong className="text-ink">replaces</strong> the diary on this device with the one in the backup. You’ll unlock it with
-          the phrase the backup was made with.
-        </p>
-        <div>
-          <label htmlFor="backup-file" className="text-sm font-semibold">
-            Backup file
-          </label>
-          <input
-            ref={input}
-            id="backup-file"
-            type="file"
-            accept="application/json,.json"
-            className="mt-1 block w-full text-sm"
-            onChange={async (e) => {
-              setError('')
-              const f = e.target.files?.[0]
-              if (!f) return setFile(null)
-              try {
-                setFile(JSON.parse(await f.text()))
-              } catch {
-                setError('That file couldn’t be read.')
-                setFile(null)
-              }
-            }}
-          />
-        </div>
-        <PasswordField id="restore-phrase" label="The backup’s secret phrase" value={phrase} onChange={setPhrase} autoComplete="current-password" />
-        {error && (
-          <p role="alert" className="text-sm font-semibold text-accent">
-            {error}
-          </p>
-        )}
-        <div className="flex justify-end gap-2 pt-2">
-          <button type="button" className="btn btn-ghost" onClick={onClose}>
-            Cancel
-          </button>
-          <button className="btn btn-primary" disabled={busy || !file || !phrase}>
-            {busy ? 'Restoring…' : 'Restore'}
-          </button>
-        </div>
-      </form>
-    </Dialog>
-  )
-}
-
-function ReadableDialog({ open, onClose, entries }: { open: boolean; onClose: () => void; entries: Entry[] }) {
-  return (
-    <Dialog open={open} onClose={onClose} title="A readable copy">
+    <Dialog open={open} onClose={onClose} title="Take your memories with you">
       <p className="leading-relaxed text-muted">
-        This downloads all your pages as a plain text file anyone could open — <strong className="text-ink">it isn’t encrypted</strong>.
-        Keep it somewhere private, and delete it when you don’t need it.
+        A <strong className="text-ink">keepsake book</strong> opens in any browser as a little book of all your pages — month by month,
+        with your moods, kept pages and tiny good things. You can print it or save it as a PDF too.
       </p>
-      <div className="mt-6 flex justify-end gap-2">
-        <button type="button" className="btn btn-ghost" onClick={onClose}>
-          Cancel
+      <p className="mt-3 text-sm leading-relaxed text-muted">
+        Unlike a backup, <strong className="text-ink">this copy isn’t encrypted</strong> — anyone who opens the file can read it. Keep it
+        somewhere private.
+      </p>
+      <div className="mt-6 flex flex-wrap justify-end gap-2">
+        <button
+          type="button"
+          className="btn btn-ghost text-sm"
+          onClick={() => {
+            download(`my-little-corner-${stamp()}.md`, `# my little corner
+
+${readable(entries)}
+`, 'text/markdown')
+            onClose()
+          }}
+        >
+          Plain text instead
         </button>
         <button
           type="button"
           className="btn btn-primary"
-          onClick={() => {
-            download(`my-little-corner-${new Date().toISOString().slice(0, 10)}.md`, `# my little corner\n\n${readable(entries)}\n`, 'text/markdown')
-            onClose()
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true)
+            try {
+              await downloadKeepsake(entries, name)
+              toast('Your little book is ready 📖')
+              onClose()
+            } finally {
+              setBusy(false)
+            }
           }}
         >
-          I understand, download
+          <Icon name="book" size={16} /> {busy ? 'Making your book…' : 'Download keepsake book'}
         </button>
       </div>
     </Dialog>
@@ -475,8 +555,9 @@ function EraseDialog({ open, onClose }: { open: boolean; onClose: () => void }) 
   return (
     <Dialog open={open} onClose={onClose} title="Erase your diary?">
       <p className="leading-relaxed text-muted">
-        Every page on this device will be deleted forever. If you want to keep them, download a backup first. Type{' '}
-        <strong className="text-ink">erase everything</strong> to confirm.
+        Every page in your account will be deleted. If you want to keep them, download a backup first. (The server keeps an encrypted
+        copy for 30 days in case this was a mistake, then it’s gone for good.) Type <strong className="text-ink">erase everything</strong> to
+        confirm.
       </p>
       <input className="field mt-3" value={confirm} onChange={(e) => setConfirm(e.target.value)} aria-label="Type erase everything to confirm" />
       <div className="mt-6 flex justify-end gap-2">
