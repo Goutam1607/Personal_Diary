@@ -10,7 +10,9 @@ services:
   - type: web
     name: my-little-corner-app
     runtime: node
-    plan: starter
+    plan: free  # sleeps after ~15 min idle; first visit after that takes ~1 min. "starter" is always on (paid).
+    # Closest Render region to the Supabase project (South Asia, Mumbai). Keep the two close: every save is a round trip.
+    region: singapore
     buildCommand: npm ci --include=dev && npm run build
     startCommand: npm run serve
     healthCheckPath: /api/health
