@@ -442,3 +442,66 @@ body::after {
 .no-motion .celebrate {
   display: none;
 }
+
+/* "your words stay yours": a sealed letter of a promise */
+.promise {
+  background:
+    radial-gradient(120% 70% at 50% 0%, color-mix(in oklab, var(--accent-soft) 70%, transparent), transparent 70%),
+    var(--paper);
+  border: 1.5px solid color-mix(in oklab, var(--accent) 35%, transparent);
+  box-shadow:
+    0 0 0 6px color-mix(in oklab, var(--accent-soft) 35%, transparent),
+    var(--shadow-lift);
+  backdrop-filter: blur(14px) saturate(1.1);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+}
+.promise-seal {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  translate: -50% -50%;
+  display: grid;
+  place-items: center;
+  width: 3.2rem;
+  height: 3.2rem;
+  border-radius: 50%;
+  color: #ffe4e4;
+  background: radial-gradient(circle at 35% 30%, #e0707a, #b2434f);
+  box-shadow:
+    0 0 0 4px color-mix(in oklab, #e0707a 22%, transparent),
+    0 6px 14px rgb(120 30 45 / 0.35);
+  animation: seal-float 4s ease-in-out infinite;
+}
+@keyframes seal-float {
+  0%, 100% { transform: translateY(0) rotate(-4deg); }
+  50% { transform: translateY(-4px) rotate(4deg); }
+}
+.promise-lock {
+  box-shadow: 0 0 0 0 color-mix(in oklab, var(--accent) 45%, transparent);
+  animation: lock-pulse 2.8s ease-out infinite;
+}
+:root.night .promise-lock {
+  color: #231d33;
+}
+@keyframes lock-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--accent) 45%, transparent); }
+  70%, 100% { box-shadow: 0 0 0 12px transparent; }
+}
+.cipher {
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  letter-spacing: 0.04em;
+  background: linear-gradient(90deg, var(--muted) 0%, var(--accent) 50%, var(--muted) 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: cipher-shimmer 3s linear infinite;
+}
+@keyframes cipher-shimmer {
+  to { background-position: -200% 0; }
+}
+.promise-whisper {
+  color: var(--ink);
+  background: color-mix(in oklab, var(--accent-soft) 60%, transparent);
+  border: 1px solid color-mix(in oklab, var(--accent) 25%, transparent);
+}

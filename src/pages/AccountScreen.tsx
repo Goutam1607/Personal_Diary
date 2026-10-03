@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { PrivacyPromise } from '../components/PrivacyPromise'
 import { LockScene } from '../components/scene/LockScene'
 import { Icon } from '../components/ui/Icon'
 import { MIN_PASSWORD_LENGTH } from '../lib/account'
@@ -142,6 +143,8 @@ export function AccountScreen() {
             {busy ? (creating ? 'Making your account…' : 'Signing in…') : creating ? 'Create my account' : 'Sign in'}
           </button>
         </form>
+
+        <PrivacyPromise className="mt-12" />
       </div>
     </main>
   )

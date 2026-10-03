@@ -59,10 +59,12 @@ export function SetupScreen() {
             <p className="mt-3 max-w-sm leading-relaxed text-muted">
               A private place to write about your days, your feelings, and anything you don’t feel like telling anyone else.
             </p>
-            <p className="mt-3 flex max-w-sm items-start gap-2 rounded-2xl bg-accent-soft/50 px-4 py-3 text-left text-sm leading-relaxed">
-              <span aria-hidden="true">🔐</span>
+            <p className="promise-whisper mt-4 flex max-w-sm items-start gap-3 rounded-2xl px-4 py-3 text-left text-sm leading-relaxed">
+              <span className="wax-seal mt-0.5 shrink-0" aria-hidden="true">
+                <Icon name="lock" size={14} />
+              </span>
               <span>
-                This corner is only yours. Everything you write is encrypted on this device before it’s saved to your account, so the
+                <strong>This corner is only yours.</strong> Everything you write is encrypted on this device before it’s saved to your account, so the
                 server only keeps scrambled pages. Not even the person who runs this site can read them.
               </span>
             </p>

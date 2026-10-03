@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { LockScene } from '../components/scene/LockScene'
 import { Dialog } from '../components/ui/Dialog'
 import { Icon } from '../components/ui/Icon'
+import { PrivacyWhisper } from '../components/PrivacyPromise'
 import { PasskeyError } from '../lib/passkey'
 import { WrongSecretError } from '../lib/vault'
 import { useSettings } from '../state/settings'
@@ -111,6 +112,8 @@ export function LockScreen() {
             {error}
           </p>
         </div>
+
+        <PrivacyWhisper className="mt-2">Encrypted on your device. Only your phrase or passkey opens it.</PrivacyWhisper>
 
         <button type="button" className="mt-4 text-sm text-muted underline decoration-dotted underline-offset-4 hover:text-ink" onClick={() => setForgotOpen(true)}>
           Forgot your phrase?
